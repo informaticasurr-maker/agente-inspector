@@ -1,0 +1,43 @@
+name: Inspección Continua (CI)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  audit:
+    name: Auditoría de Seguridad y Calidad
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar Repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar Dependencias del Inspector
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Ejecutar Pruebas Unitarias
+        run: |
+          pytest tests/
+
+      - name: Ejecutar Agente Inspector sobre sí mismo
+        run: |
+          inspector scan . --fail-on HIGH --sarif
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Publicar Reporte de Auditoría en el Summary
+        if: always()
+        run: |
+          if [ -f INSPECTION_REPORT.md ]; then
+            cat INSPECTION_REPORT.md >> $GITHUB_STEP_SUMMARY
+          fi
