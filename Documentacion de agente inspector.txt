@@ -1,0 +1,66 @@
+
+crear archivo inspector.yaml
+
+name: Auditoría de Seguridad y Código
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar Agente Inspector
+        run: |
+          python -m pip install --upgrade pip
+          pip install git+https://github.com/informaticasurr-maker/agente-inspector.git
+
+      - name: Ejecutar Auditoría
+        run: |
+          inspector scan . --fail-on HIGH --sarif
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Publicar Reporte en el Resumen de GitHub
+        if: always()
+        run: |
+          if [ -f INSPECTION_REPORT.md ]; then
+            cat INSPECTION_REPORT.md >> $GITHUB_STEP_SUMMARY
+          fi
+############################################################################################################################################
+En GitHub: Tu repositorio privado en https://github.com/informaticasurr-maker/agente-inspector.
+En cualquier proyecto: Solo agregas el archivo .github/workflows/inspector.yml y se auditará automáticamente en cada push/PR.
+En tu PC: Puedes correr inspector scan . (o con --ai / --fix) en cualquier momento para auditorías instantáneas.
+En este IDE: La habilidad code-inspector está registrada para auditar tu código directamente cuando lo necesites. 
+
+///////////////////agregar :.github/workflows/inspector.yml  dentro del proyecto ////////////
+
+comandos para ejecutarlos:
+
+comandos para que puedas usar y configurar el Agente Inspector manualmente en cualquier momento:
+
+1. Comandos de Inspección (en cualquier proyecto)
+Párate en la carpeta de tu proyecto (por ejemplo cd ~/Escritorio/barbería-elite-&-turnos) y usa:
+
+Auditoría estándar (rápida y offline) ::::::  bash:  inspector scan .
+
+Auditar una carpeta o archivo específico::::: bash:  inspector scan src/ o inspector scan index.js
+
+Auto-corregir problemas mecánicos::::::::     bash:	inspector scan . --fix
+
+Auditoría profunda con IA (Gemini)::::::::   bash:	export GEMINI_API_KEY="tu-clave"  inspector scan . --ai
+
+Generar reporte SARIF (para seguridad)	 bash: inspector scan . --sarif
+
+Ver ayuda y opciones disponibles::::::: bash	inspector scan --help
